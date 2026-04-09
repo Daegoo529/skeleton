@@ -1,9 +1,9 @@
 <script setup>
-import TransationList from '@/components/views/TransactionList.vue';
+// import TransationList from '@/components/views/TransactionList.vue';
 </script>
 
 <template>
-  <TransationList />
+  <router-view />
 </template>
 
 <style scoped></style>
