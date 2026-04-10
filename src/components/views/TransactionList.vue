@@ -302,14 +302,12 @@ const visibleCategories = computed(() =>
 
 // 전체 선택 체크박스도 filteredMCT 기준이라 문제없지만
 // filteredMCT 안에서 selectedCategory 비교 부분 확인
-const isAllSelected = computed(
-  () =>
-    filteredMCT.value.length > 0 &&
-    selectedIds.value.length ===
-      filteredMCT.value.filter(
-        (item) => !(item.isRecurring && new Date(item.date) > new Date()),
-      ).length,
-);
+const isAllSelected = computed(() => {
+  const checkable = filteredMCT.value.filter(
+    (item) => !(item.isRecurring && new Date(item.date) > new Date()),
+  );
+  return checkable.length > 0 && selectedIds.value.length === checkable.length;
+});
 
 const toggleAll = (e) => {
   selectedIds.value = e.target.checked
