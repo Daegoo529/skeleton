@@ -2,11 +2,34 @@
   <div class="container">
     <!-- 상단 헤더 -->
     <div class="header">
-      <button @click="prevMonth">◀</button>
+      <button @click="prevMonth">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M15 18L9 12L15 6"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
       <h2>{{ currentMonth }}월</h2>
-      <button @click="nextMonth">▶</button>
-
-      <input v-model="search" placeholder="메모 검색" />
+      <button @click="nextMonth">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M9 6L15 12L9 18"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+      <input
+        v-model="search"
+        placeholder="메모 검색"
+        class="memo_window search-input"
+      />
     </div>
 
     <!-- 카테고리 필터 -->
@@ -17,82 +40,159 @@
           <option value="income">수입</option>
           <option value="expense">지출</option>
         </select>
+        <svg
+          class="dropdown-arrow"
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+        >
+          <path
+            d="M6 9L12 15L18 9"
+            stroke="#666"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
       </div>
-      <!-- <div class="filters">
-        <button
-          :class="{ active: selectedCategory === '전체' }"
-          @click="selectedCategory = '전체'"
-        >
-          전체
-        </button>
-
-        <button
-          v-for="category in state.categories"
-          :key="category.id"
-          :class="{ active: selectedCategory === category.name }"
-          @click="selectedCategory = category.name"
-        >
-          {{ category.img }} {{ category.name }}
-        </button>
-      </div> -->
       <div class="filters" ref="filtersRef">
         <button
-          :class="{ active: selectedCategory === '전체' }"
+          :class="{ active: selectedCategory.includes('전체') }"
           @click="selectedCategory = '전체'"
         >
           전체
         </button>
-
         <button
           v-for="category in visibleCategories"
           :key="category.id"
-          :class="{ active: selectedCategory === category.name }"
-          @click="selectedCategory = category.name"
+          :class="{ active: selectedCategory.includes(category.name) }"
+          :style="{
+            background: selectedCategory.includes(category.name)
+              ? category.color
+              : '',
+            borderColor: category.color,
+          }"
+          @click="toggleCategory(category.name)"
         >
           {{ category.img }} {{ category.name }}
         </button>
-
-        <!-- 더보기 / 접기 토글 버튼 -->
-        <button
-          v-if="state.categories.length > visibleCount"
-          class="toggle-btn"
-          @click="showAllCategories = !showAllCategories"
-        >
-          {{ showAllCategories ? '접기' : '더보기' }}
-        </button>
       </div>
+      <button
+        v-if="store.categories.length > visibleCount"
+        class="toggle-btn"
+        @click="showAllCategories = !showAllCategories"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path
+            :d="showAllCategories ? 'M15 18L9 12L15 6' : 'M9 6L15 12L9 18'"
+            stroke="#666"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+      <button class="upcoming-toggle" @click="showUpcoming = !showUpcoming">
+        <svg
+          v-if="showUpcoming"
+          width="22"
+          height="22"
+          viewBox="0 0 24 24"
+          fill="none"
+        >
+          <path
+            d="M2 12C2 12 5 5 12 5C19 5 22 12 22 12C22 12 19 19 12 19C5 19 2 12 2 12Z"
+            stroke="#444"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <circle cx="12" cy="12" r="3" stroke="#444" stroke-width="2" />
+        </svg>
+        <svg v-else width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M17.94 17.94A10.07 10.07 0 0112 20C5 20 2 12 2 12A18.09 18.09 0 015.06 7.06M9.9 4.24A9.12 9.12 0 0112 4C19 4 22 12 22 12A18.09 18.09 0 0119.08 16.08M1 1L23 23"
+            stroke="#444"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M10.73 10.73A3 3 0 0013.27 13.27"
+            stroke="#444"
+            stroke-width="2"
+            stroke-linecap="round"
+          />
+        </svg>
+      </button>
     </div>
 
     <!-- 테이블 -->
     <table class="table">
       <thead>
         <tr>
-          <th></th>
+          <th>
+            <input
+              type="checkbox"
+              :checked="isAllSelected"
+              @change="toggleAll"
+            />
+          </th>
           <th>날짜</th>
           <th>거래 내역</th>
           <th>금액</th>
           <th>카테고리</th>
           <th>메모</th>
-          <th width="100px"></th>
+          <th width="100px">
+            <button v-if="selectedIds.length > 0" @click="deleteSelected">
+              삭제
+            </button>
+          </th>
         </tr>
       </thead>
       <tbody>
-        <!-- <tr v-for="item in filteredList" :key="item.id"> -->
-        <tr v-for="item in filteredMCT" :key="item.id" class="btn_hover">
-          <td><input type="checkbox" /></td>
-          <td>{{ item.id }}</td>
+        <tr
+          v-for="item in filteredMCT"
+          :key="item.id"
+          class="btn_hover"
+          :class="{
+            upcoming: item.isRecurring && new Date(item.date) > new Date(),
+          }"
+          v-show="
+            !(item.isRecurring && new Date(item.date) > new Date()) ||
+            showUpcoming
+          "
+        >
+          <td>
+            <input
+              type="checkbox"
+              :value="item.id"
+              v-model="selectedIds"
+              :disabled="item.isRecurring && new Date(item.date) > new Date()"
+            />
+          </td>
           <td>{{ item.date }}</td>
-          <td>{{ item.amount }}</td>
+          <td>{{ item.detail }}</td>
+          <td>
+            <span :class="item.type === 'expense' ? 'negative' : 'positive'">
+              {{ item.type === 'expense' ? '-' : '+'
+              }}{{ Number(item.amount).toLocaleString() }}원
+            </span>
+          </td>
           <td>
             <span
               :style="{ background: item.categoryColor }"
               class="categoryImg"
-              >{{ item.categoryImg }}</span
-            >{{ item.categoryName }}
+            >
+              {{ item.categoryImg }}
+            </span>
+            {{ item.categoryName }}
           </td>
           <td>{{ item.memo }}</td>
           <td>
             <div class="button_hover">
+              <!-- 수정 아이콘 -->
               <svg
                 class="pencil_icon"
                 width="24px"
@@ -101,7 +201,6 @@
                 stroke-width="1.5"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
-                color="#000000"
               >
                 <path
                   d="M14.3632 5.65156L15.8431 4.17157C16.6242 3.39052 17.8905 3.39052 18.6716 4.17157L20.0858 5.58579C20.8668 6.36683 20.8668 7.63316 20.0858 8.41421L18.6058 9.8942M14.3632 5.65156L4.74749 15.2672C4.41542 15.5993 4.21079 16.0376 4.16947 16.5054L3.92738 19.2459C3.87261 19.8659 4.39148 20.3848 5.0115 20.33L7.75191 20.0879C8.21972 20.0466 8.65806 19.8419 8.99013 19.5099L18.6058 9.8942M14.3632 5.65156L18.6058 9.8942"
@@ -109,8 +208,9 @@
                   stroke-width="1.5"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                ></path>
+                />
               </svg>
+              <!-- 삭제 아이콘 -->
               <svg
                 class="trash_icon"
                 width="24px"
@@ -118,27 +218,22 @@
                 viewBox="0 0 24 24"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
-                color="#000000"
                 stroke-width="1.5"
               >
-                <path
-                  d="M20 9L18.005 20.3463C17.8369 21.3026 17.0062 22 16.0353 22H7.96474C6.99379 22 6.1631 21.3026 5.99496 20.3463L4 9"
-                  fill="#000000"
-                ></path>
                 <path
                   d="M20 9L18.005 20.3463C17.8369 21.3026 17.0062 22 16.0353 22H7.96474C6.99379 22 6.1631 21.3026 5.99496 20.3463L4 9H20Z"
                   stroke="#000000"
                   stroke-width="1.5"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                ></path>
+                />
                 <path
                   d="M21 6H15.375M3 6H8.625M8.625 6V4C8.625 2.89543 9.52043 2 10.625 2H13.375C14.4796 2 15.375 2.89543 15.375 4V6M8.625 6H15.375"
                   stroke="#000000"
                   stroke-width="1.5"
                   stroke-linecap="round"
                   stroke-linejoin="round"
-                ></path>
+                />
               </svg>
             </div>
           </td>
@@ -149,183 +244,127 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, reactive } from 'vue';
-import axios from 'axios';
+import { ref, computed, onMounted, watch } from 'vue';
+import { useTransactionStore } from '@/stores/budgetStore';
+const showUpcoming = ref(false); // 기본값 false (안보임)
+const store = useTransactionStore();
 
-// import Iconoir from 'iconoir/icons/iconoir.svg';
-
-// 마우스로 스크롤
-const selectedType = ref('전체'); // 기본값 '전체'
+// 필터 상태
+const currentMonth = ref(new Date().getMonth() + 1);
+const selectedCategory = ref(['전체']);
+const selectedType = ref('전체');
+const search = ref('');
+const selectedIds = ref([]);
+const showAllCategories = ref(false);
+const visibleCount = 5;
 const filtersRef = ref(null);
 
-onMounted(() => {
+// 데이터 로드
+onMounted(async () => {
+  await store.loadData();
+
+  // 마우스 드래그 스크롤
   const slider = filtersRef.value;
-  let isDown = false;
-  let startX;
-  let scrollLeft;
+  let isDown = false,
+    startX,
+    scrollLeft;
 
   slider.addEventListener('mousedown', (e) => {
     isDown = true;
-    slider.classList.add('active');
     startX = e.pageX - slider.offsetLeft;
     scrollLeft = slider.scrollLeft;
   });
   slider.addEventListener('mouseleave', () => {
     isDown = false;
-    slider.classList.remove('active');
   });
   slider.addEventListener('mouseup', () => {
     isDown = false;
-    slider.classList.remove('active');
   });
   slider.addEventListener('mousemove', (e) => {
     if (!isDown) return;
     e.preventDefault();
     const x = e.pageX - slider.offsetLeft;
-    const walk = (x - startX) * 2; // 스크롤 속도 조절
-    slider.scrollLeft = scrollLeft - walk;
+    slider.scrollLeft = scrollLeft - (x - startX) * 2;
   });
 });
 
-// 필터 접기 펼치기
-const showAllCategories = ref(false);
-const visibleCount = 5;
+// 필터링 (store의 헬퍼 활용)
+const filteredByCategory = store.filteredByCategory(selectedCategory, search);
+const filteredByMonth = store.filteredByMonth(filteredByCategory, currentMonth);
+const filteredByType = store.filteredByType(filteredByMonth, selectedType);
+const filteredMCT = store.filteredByToday(filteredByType); // ✅ 마지막에 연결
+// 보이는 카테고리
+const visibleCategories = computed(() =>
+  showAllCategories.value
+    ? store.categories
+    : store.categories.slice(0, visibleCount),
+);
 
-const visibleCategories = computed(() => {
-  return showAllCategories.value
-    ? state.categories
-    : state.categories.slice(0, visibleCount);
+// 전체 선택 체크박스도 filteredMCT 기준이라 문제없지만
+// filteredMCT 안에서 selectedCategory 비교 부분 확인
+const isAllSelected = computed(
+  () =>
+    filteredMCT.value.length > 0 &&
+    selectedIds.value.length ===
+      filteredMCT.value.filter(
+        (item) => !(item.isRecurring && new Date(item.date) > new Date()),
+      ).length,
+);
+
+const toggleAll = (e) => {
+  selectedIds.value = e.target.checked
+    ? filteredMCT.value
+        .filter(
+          (item) => !(item.isRecurring && new Date(item.date) > new Date()),
+        )
+        .map((item) => item.id)
+    : [];
+};
+
+// 필터 변경 시 선택 초기화
+watch([currentMonth, selectedType, search], () => {
+  selectedIds.value = [];
 });
+watch(
+  selectedCategory,
+  () => {
+    selectedIds.value = [];
+  },
+  { deep: true },
+);
 
-// const getData = computed(() => {
-//   console.log('함수 실행됨'); // 👈 이거 추가
+const toggleCategory = (name) => {
+  // 혹시라도 배열이 아니면 강제로 배열로 변환
+  if (!Array.isArray(selectedCategory.value)) {
+    selectedCategory.value = ['전체'];
+  }
 
-//   axios
-//     .get('/api/data')
-//     // .get('http://localhost:3000/api/data')
-//     .then((response) => {
-//       console.log(response.data); // ✅ 여기엔 JSON 나와야 정상
-//     })
-//     .catch((error) => {
-//       console.log(error);
-//     });
-// });
-// const budgetList = ref([]);
-const state = reactive({
-  budgetList: [],
-  categories: [],
-  // budgetmonth: [],
-});
-// const categories = ref([]);
-// 거래내역 가져오기
-const getBudgetData = async () => {
-  try {
-    const res = await axios.get('http://localhost:3000/api/data'); // 프록시 적용
-    // console.log('전체 데이터:', res.data); // 🔹 전체 JSON 확인
-    state.budgetList = res.data.BUDGET; // 🔹 여기서 BUDGET만 가져오기
-    state.categories = res.data.CATEGORY; // 카테고리 가져오기
-    const categoryNameMap = new Map();
-    const categoryImgMap = new Map();
-    const categoryColorMap = new Map();
-    state.categories.forEach((cate) => {
-      categoryNameMap.set(cate.id, cate.name);
-    });
-    state.categories.forEach((cate) => {
-      categoryImgMap.set(cate.id, cate.img);
-    });
-    state.categories.forEach((cate) => {
-      categoryColorMap.set(cate.id, cate.color);
-    });
+  if (name === '전체') {
+    selectedCategory.value = ['전체'];
+    return;
+  }
 
-    const budgets = res.data.BUDGET;
-    state.budgetList = budgets.map((budget) => ({
-      ...budget,
+  // '전체' 해제
+  let current = selectedCategory.value.filter((c) => c !== '전체');
 
-      categoryName: categoryNameMap.get(budget.cid) || '알 수 없음',
-      categoryImg: categoryImgMap.get(budget.cid) || '❓',
-      categoryColor: categoryColorMap.get(budget.cid) || '#000000',
-    }));
-
-    console.log(state.budgetList[0].date);
-    // console.log('BUDGET만:', budgetList.value);
-  } catch (err) {
-    console.error(err);
+  if (current.includes(name)) {
+    current = current.filter((c) => c !== name);
+    selectedCategory.value = current.length === 0 ? ['전체'] : current;
+  } else {
+    selectedCategory.value = [...current, name];
   }
 };
 
-onMounted(() => {
-  getBudgetData();
-});
-
-const now = new Date();
-
-const selectedCategory = ref('전체');
-
-// 카테고리 필터링
-const filteredCategory = computed(() => {
-  return state.budgetList.filter((item) => {
-    const matchCategory =
-      selectedCategory.value === '전체' ||
-      item.categoryName === selectedCategory.value;
-    const matchSearch =
-      item.detail.includes(search.value) || item.memo.includes(search.value);
-    // const budgetMonth = parseInt(item.date.split('-')[1], 10);
-    // const matchMonth = budgetMonth === currentMonth;
-    return matchCategory && matchSearch;
-  });
-});
-
-// 카테고리 필터링 + 월 필터링
-const filteredMC = computed(() => {
-  console.log(filteredMC);
-  return filteredCategory.value.filter((item) => {
-    const matchMonth = parseInt(item.date.split('-')[1], 10);
-    // console.log(budgetmonth);
-    // console.log(currentMonth.value);
-
-    return matchMonth === currentMonth.value;
-  });
-});
-
-// 카테고리 필터링 + 월 필터링 + type 필터링
-const filteredMCT = computed(() => {
-  console.log(selectedType.value);
-  return filteredMC.value.filter((item) => {
-    const matchType =
-      selectedType.value === '전체' || selectedType.value === item.type;
-
-    return matchType;
-  });
-});
-
-const currentMonth = ref(now.getMonth() + 1);
-const search = ref('');
 // 월 이동
 const prevMonth = () => {
-  if (currentMonth.value === 1) {
-    currentMonth.value = 12;
-    console.log(getBudgetData().date);
-  } else {
-    currentMonth.value--;
-  }
+  currentMonth.value = currentMonth.value === 1 ? 12 : currentMonth.value - 1;
 };
 const nextMonth = () => {
-  if (currentMonth.value === 12) {
-    currentMonth.value = 1;
-  } else {
-    currentMonth.value++;
-  }
-};
-
-import { useRouter } from 'vue-router';
-
-const router = useRouter();
-
-const goToEdit = () => {
-  router.push('/transaction/edit/:id'); // /edit 경로로 이동
+  currentMonth.value = currentMonth.value === 12 ? 1 : currentMonth.value + 1;
 };
 </script>
 
+<!-- 기존 <style scoped> 그대로 유지 -->
 <style scoped>
 .container {
   padding: 20px;
@@ -339,6 +378,9 @@ const goToEdit = () => {
 }
 
 .filters {
+  height: 34px; /* 추가 */
+  line-height: 1; /* 추가 */
+  padding: 0 12px; /* 상하 padding 제거하고 height로 통일 */
   width: 800px;
   margin: 15px 0;
   display: flex;
@@ -374,6 +416,7 @@ const goToEdit = () => {
 .table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed; /* ✅ 핵심 */
 }
 
 .table th,
@@ -415,18 +458,165 @@ td {
   gap: 10px;
 }
 .type-dropdown select {
-  height: 32px; /* ✅ 버튼과 동일 */
-  padding: 0 12px;
+  /* appearance: auto; /* 드롭다운 화살표 유지 */
+  /* height: 34px; /* ✅ 버튼과 동일 */
+  /* padding: 0 12px;
   border-radius: 18px;
   border: none;
   background: #f1f1f1;
-  font-size: 14px;
+  font-size: 14px; */
+  /* line-height: 34px; 추가 */
+  height: 34px;
+  padding: 0 32px 0 14px; /* 오른쪽 padding 줄임 */
+  border-radius: 18px;
+  border: 1.5px solid #ccc;
+  background: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  color: #444;
+  appearance: none; /* 기본 화살표 제거 */
+  -webkit-appearance: none;
 }
 .toggle-btn {
+  height: 34px; /* 추가 */
+  line-height: 1; /* 추가 */
+  min-width: unset; /* 기존 min-width 제거 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background-color: #ddd;
   border: none;
-  padding: 6px 12px;
+  padding: 0 12px;
   border-radius: 20px;
   cursor: pointer;
+}
+.upcoming {
+  opacity: 0.4;
+}
+.upcoming-toggle {
+  width: 50px; /* 아이콘 커진 만큼 버튼도 키움 */
+  height: 50px;
+  line-height: 1; /* 추가 */
+  min-width: unset; /* 기존 min-width 제거 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  padding: 0 12px;
+  border-radius: 20px;
+  border: 1px solid #ddd;
+  background: #f5f5f5;
+  cursor: pointer;
+}
+.upcoming-toggle:hover {
+  background: #e0e0e0;
+}
+.toggle-btn,
+.upcoming-toggle {
+  margin-bottom: 5px;
+}
+
+.type-dropdown select,
+.toggle-btn,
+.upcoming-toggle {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 18px;
+  border: 1.5px solid #ccc;
+  background: #fff;
+  font-size: 13px;
+  font-family: sans-serif;
+  cursor: pointer;
+  color: #444;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+  white-space: nowrap;
+  line-height: 1;
+}
+.type-dropdown {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.type-dropdown select:hover,
+.toggle-btn:hover,
+.upcoming-toggle:hover {
+  background: #f0f0f0;
+  border-color: #aaa;
+}
+.dropdown-arrow {
+  position: absolute;
+  right: 4px; /* 화살표 위치 왼쪽으로 당김 */
+  pointer-events: none; /* 클릭 통과 */
+}
+.memo_window {
+  margin-left: auto; /* 오른쪽 끝으로 */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-input {
+  height: 34px;
+  padding: 0 14px 0 36px; /* 왼쪽에 아이콘 공간 */
+  border-radius: 18px;
+  border: 1.5px solid #e0e0e0;
+  font-size: 13px;
+  outline: none;
+  width: 180px;
+  background-color: #f7f8fa;
+  color: #333;
+  transition: all 0.2s ease;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23aaa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='M21 21l-4.35-4.35'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 12px center;
+}
+
+.search-input::placeholder {
+  color: #bbb;
+}
+
+.search-input:focus {
+  border-color: #4caf50;
+  background-color: #fff;
+  width: 220px; /* 포커스 시 살짝 늘어남 */
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+.header button {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1.5px solid #e0e0e0;
+  background: #f7f8fa;
+  cursor: pointer;
+  color: #555;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.header button:hover {
+  background: #4caf50;
+  border-color: #4caf50;
+  color: white;
+  transform: scale(1.1);
+}
+
+.header button:active {
+  transform: scale(0.95);
+}
+.negative {
+  color: #e74c3c;
+  font-weight: 500;
+}
+.positive {
+  color: #2ecc71;
+  font-weight: 500;
 }
 </style>
