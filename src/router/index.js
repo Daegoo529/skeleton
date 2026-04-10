@@ -9,10 +9,7 @@ const router = createRouter({
       path: '/',
       component: Dashboard,
     },
-    {
-      path: '/api/upcoming',
-      component: UpcomingTransaction,
-    },
+
     {
       path: '/api/data',
       name: 'transactionList',
